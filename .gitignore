@@ -1,0 +1,94 @@
+#
+# Microsoft Visual Studio and C#
+#
+## Build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.pdb
+*.suo
+*.user
+*.useros
+*.ncb
+*.aps
+*.bsc
+*.sbr
+*.tlb
+*.tlh
+*.bak
+*.[Cc]ache
+*.csproj.user
+*.vcxproj.user
+*.dbmdl
+*.log
+*.vspscc
+*.vssscc
+*.builds
+*.docstates
+
+# NuGet packages
+packages/
+*.nupkg
+# Exclude the "tools" folder used by some packages
+!**/packages/**/tools/
+# Exclude the "build" folder used by some packages
+!**/packages/**/build/
+
+# IDE files
+## Visual Studio
+.vs/
+*.vsp
+*.log
+*.ide.log
+*.opensdf
+*.sdf
+
+## Visual Studio Code
+.vscode/
+
+## Rider
+.idea/
+
+# Unit test coverage results
+*.codecoverage
+*.coverage
+*.coveragexml
+*.trx
+
+# Various build files
+**/*.resharper
+**/*.dotsettings
+*.psess
+*.vsscc
+*.vspscc
+*.vssscc
+*.vcxproj.filters
+*.vmdf
+*.pfx
+
+# Web applications
+Web.config.user
+*.pubxml
+*.pubxml.user
+
+# Mac/OSX
+.DS_Store
+# Thumbnails
+._*
+# History files
+.history
+
+# Linux/Unix
+*~
+
+# Temporary files
+*.tmp
+
+# Azure / Cloud Services
+*.cscfg
+*.csdef
+# Microsoft Azure Web Sites
+ServiceConfiguration.*.cscfg
+PublishSettings.xml
