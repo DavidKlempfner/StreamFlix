@@ -32,10 +32,10 @@ namespace StreamFlix.Services.Shelves
             { ShelfType.HeaderShelf, (layoutItem, shows) => ShelfItemMapper.MapLayoutItemAndShowsToHeaderShelf(layoutItem, shows).Cast<ShelfItem>().ToList() }
         };
 
-        public async Task<IList<ShelfItem>> GetNonPersonalisedShelves()
+        public async Task<List<List<ShelfItem>>> GetNonPersonalisedShelves()
         {
             var layoutConfig = await layoutService.GetHomePageLayoutAsync();
-            /*
+            /* eg:
              {
                 "page": "home",
                 "title": "Home Page",
@@ -80,7 +80,7 @@ namespace StreamFlix.Services.Shelves
             // The front-end can then make a second HTTP request to get the personalised data below the fold using the URLs provided from the initial response.
         }
 
-        private async Task<List<ShelfItem>> GetNonPersonalisedShelvesFromConfigAsync(LayoutConfig layoutConfig)
+        private async Task<List<List<ShelfItem>>> GetNonPersonalisedShelvesFromConfigAsync(LayoutConfig layoutConfig)
         {            
             var nonPersonalisedShelfLayoutItems = layoutConfig.Layout.Where(item => !IsPersonalisedShelf(item.DataSourceType));
             //eg:
@@ -119,16 +119,22 @@ namespace StreamFlix.Services.Shelves
             //  { TrendingNow:       [ { id: "show001", title: "The Great Adventure" }, { id: "show002", title: "Comedy Central" } ] },
             //  { TrendingYesterday: [ { id: "show003", title: "Space Odyssey" }, { id: "show004", title: "Historical Chronicles" } ] }
 
+            var nonPersonalisedShelves = ConvertToNonPersonalisedShelves(nonPersonalisedShelfLayoutItems, nonPersonalisedDataSourceTypesAndShows);
+
+            return nonPersonalisedShelves;
+        }
+
+        private List<List<ShelfItem>> ConvertToNonPersonalisedShelves(IEnumerable<LayoutItem> nonPersonalisedShelfLayoutItems, Dictionary<DataSourceType, IList<Show>> nonPersonalisedDataSourceTypesAndShows)
+        {
             List<List<ShelfItem>> nonPersonalisedShelves = new();
             foreach (var shelfLayoutItem in nonPersonalisedShelfLayoutItems)
             {
                 var showsForShelf = nonPersonalisedDataSourceTypesAndShows[shelfLayoutItem.DataSourceType];
                 var shelfItems = shelfMappers[shelfLayoutItem.Type].Invoke(shelfLayoutItem, showsForShelf);
-                // TODO: be more consistent with IList and List. List<T> is used in private methods and anything public should use IList<T>
                 nonPersonalisedShelves.Add(shelfItems.ToList());
             }
 
-            return [];
+            return nonPersonalisedShelves;
         }
 
         private async Task<IList<Show>> GetShowsAsync(IList<string> showIds)
@@ -150,6 +156,7 @@ namespace StreamFlix.Services.Shelves
 
             foreach (var (dataSourceType, showIds) in nonPersonalisedDataSourceTypesAndShowIds)
             {
+                // TODO: consider running these in parallel
                 var shows = await GetShowsAsync(showIds);
                 dataSouceTypeToShows[dataSourceType] = shows;
             }
