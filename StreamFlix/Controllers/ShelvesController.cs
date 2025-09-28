@@ -25,11 +25,10 @@ namespace StreamFlix.Controllers
     [Route("[controller]")]
     public class ShelvesController(IShelvesService shelvesService) : ControllerBase
     {
-
         [HttpGet]
-        public async Task<ICollection<Shelf>> GetShelves()
+        public async Task<IList<ShelfItem>> GetShelves()
         {
-            return await shelvesService.GetShelves();
+            return await shelvesService.GetNonPersonalisedShelves();
         }
     }
 }

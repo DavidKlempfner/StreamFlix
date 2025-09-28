@@ -2,7 +2,7 @@
 
 namespace StreamFlix.Models.Shelves
 {
-    public class HeaderShelf : Shelf
+    public class HeaderShelfItem : ShelfItem
     {
         public string Genre { get; set; } = string.Empty;
 

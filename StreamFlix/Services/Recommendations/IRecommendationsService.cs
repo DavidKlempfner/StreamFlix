@@ -2,6 +2,6 @@
 {
     public interface IRecommendationsService
     {
-        Task<ICollection<string>> GetTrendingNowShowIdsAsync();
+        Task<IList<string>> GetTrendingNowShowIdsAsync();
     }
 }

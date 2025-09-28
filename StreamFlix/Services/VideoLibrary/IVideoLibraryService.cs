@@ -4,6 +4,6 @@ namespace StreamFlix.Services.VideoLibrary
 {
     public interface IVideoLibraryService
     {
-        Task<ICollection<Show>> GetShowMetadataAsync(string showId);
+        Task<Show> GetShowMetadataAsync(string showId);
     }
 }

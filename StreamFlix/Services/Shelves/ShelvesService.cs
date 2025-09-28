@@ -4,6 +4,7 @@ using StreamFlix.Models.Shows;
 using StreamFlix.Services.Layout;
 using StreamFlix.Services.Recommendations;
 using StreamFlix.Services.VideoLibrary;
+using StreamFlix.Mappers;
 
 namespace StreamFlix.Services.Shelves
 {
@@ -20,12 +21,18 @@ namespace StreamFlix.Services.Shelves
 
         // Different methods can be added here in the future to handle different DataSourceTypes
         // This is to avoid adding a new if statement in GetShelves() every time a new DataSourceType is added
-        private readonly Dictionary<DataSourceType, Func<Task<ICollection<string>>>> dataSourceTypeRetrievers = new()
+        private readonly Dictionary<DataSourceType, Func<Task<IList<string>>>> dataSourceTypeRetrieverMappers = new()
         {
             { DataSourceType.TrendingNow, recommendationsService.GetTrendingNowShowIdsAsync }
         };
 
-        public async Task<ICollection<Shelf>> GetShelves()
+        private readonly Dictionary<ShelfType, Func<LayoutItem, IList<Show>, IList<ShelfItem>>> shelfMappers = new()
+        {
+            { ShelfType.ShowsShelf, (layoutItem, shows) => ShelfItemMapper.MapLayoutItemAndShowsToShowsShelf(layoutItem, shows).Cast<ShelfItem>().ToList() },
+            { ShelfType.HeaderShelf, (layoutItem, shows) => ShelfItemMapper.MapLayoutItemAndShowsToHeaderShelf(layoutItem, shows).Cast<ShelfItem>().ToList() }
+        };
+
+        public async Task<IList<ShelfItem>> GetNonPersonalisedShelves()
         {
             var layoutConfig = await layoutService.GetHomePageLayoutAsync();
             /*
@@ -63,16 +70,19 @@ namespace StreamFlix.Services.Shelves
             }
             */
 
-            Dictionary<DataSourceType, ICollection<string>> dataSourceTypeToShowIds = new();
-
-            var nonPersonalisedShelves = await GetNonPersonalisedShelvesAsync(layoutConfig);
+            var nonPersonalisedShelves = await GetNonPersonalisedShelvesFromConfigAsync(layoutConfig);
 
             return nonPersonalisedShelves;
+
+            // TODO: return nonPersonalisedShelves AND the URLs needed for the front-end to call the personalised shelves that display below the fold.
+            // The trade off is an extra HTTP request but a faster above the fold load time.
+            // Once the app is opened, the HTTP request can be made to display the non personalised data above the fold very quickly (definitely use caching).
+            // The front-end can then make a second HTTP request to get the personalised data below the fold using the URLs provided from the initial response.
         }
 
-        private async Task<ICollection<Shelf>> GetNonPersonalisedShelvesAsync(LayoutConfig layoutConfig)
+        private async Task<List<ShelfItem>> GetNonPersonalisedShelvesFromConfigAsync(LayoutConfig layoutConfig)
         {            
-            var nonPersonalisedShelfLayoutItems = layoutConfig.Layout.Where(item => !IsPersonalisedShelf(item.DatasourceType));
+            var nonPersonalisedShelfLayoutItems = layoutConfig.Layout.Where(item => !IsPersonalisedShelf(item.DataSourceType));
             //eg:
             /*
              {
@@ -96,70 +106,72 @@ namespace StreamFlix.Services.Shelves
                     }
              */
 
-            var nonPersonalisedDataSourceTypes = nonPersonalisedShelfLayoutItems.Select(shelf => shelf.DatasourceType).Distinct();
+            var nonPersonalisedDataSourceTypes = nonPersonalisedShelfLayoutItems.Select(shelf => shelf.DataSourceType).Distinct();
             // eg: [ TrendingNow, TrendingYesterday ]
 
-            var dataSourceTypeToShowIds = await GetDataSourceTypeToShowIdsMapping(nonPersonalisedDataSourceTypes);
+            var nonPersonalisedDataSourceTypesAndShowIds = await GetDataSourceTypesToShowIdsMappingAsync(nonPersonalisedDataSourceTypes);
             // eg:
-            // { TrendingNow:       [ "showId1", "showId2", "showId3" ] },
-            // { TrendingYesterday: [ "showId4", "showId5", "showId6" ] }
+            // { TrendingNow:       [ "show001", "show002" ] },
+            // { TrendingYesterday: [ "show003", "show004" ] }
 
-            var dataSouceTypeToShows = new Dictionary<DataSourceType, ICollection<Show>>();
+            var nonPersonalisedDataSourceTypesAndShows = await GetDataSourceTypesToShowsMappingAsync(nonPersonalisedDataSourceTypesAndShowIds);
+            // eg:
+            //  { TrendingNow:       [ { id: "show001", title: "The Great Adventure" }, { id: "show002", title: "Comedy Central" } ] },
+            //  { TrendingYesterday: [ { id: "show003", title: "Space Odyssey" }, { id: "show004", title: "Historical Chronicles" } ] }
 
-            // foreach one, get the show metadata from the Video Library Service
-            foreach (var dataSourceType in dataSourceTypeToShowIds.Keys)
+            List<List<ShelfItem>> nonPersonalisedShelves = new();
+            foreach (var shelfLayoutItem in nonPersonalisedShelfLayoutItems)
             {
-                var showIds = dataSourceTypeToShowIds[dataSourceType];
-                var showRetrievalTasks = CreateShowRetrievalTasks(showIds.ToList());
-                var shows = await Task.WhenAll(showRetrievalTasks);
-                dataSouceTypeToShows.Add(dataSourceType, shows.SelectMany(s => s).ToList());
-                // eg: [ Show { id="showId1", title="..." }, Show { id="showId2", title="..." }, Show { id="showId3", title="..." } ]
+                var showsForShelf = nonPersonalisedDataSourceTypesAndShows[shelfLayoutItem.DataSourceType];
+                var shelfItems = shelfMappers[shelfLayoutItem.Type].Invoke(shelfLayoutItem, showsForShelf);
+                // TODO: be more consistent with IList and List. List<T> is used in private methods and anything public should use IList<T>
+                nonPersonalisedShelves.Add(shelfItems.ToList());
             }
-
 
             return [];
         }
 
-        private async Task<Dictionary<DataSourceType, ICollection<string>>> GetDataSourceTypeToShowIdsMapping(IEnumerable<DataSourceType> nonPersonalisedDataSourceTypes)
+        private async Task<IList<Show>> GetShowsAsync(IList<string> showIds)
         {
-            // Run all tasks in parallel to improve performance
-            // But consider this will use up threads from the thread pool that could be used to handle other incoming requests.
-            // TODO: consider this tradeoff further and implement caching if necessary.
-            var showIdRetrievalTasks = CreateShowIdRetrievalTasks(nonPersonalisedDataSourceTypes);
-            var nonPersonalisedDataSourceTypesAndShowIds = await Task.WhenAll(showIdRetrievalTasks);
-
-            Dictionary<DataSourceType, ICollection<string>> dataSourceTypeToShowIds = new();
-            // eg: TrendingNow: [ "showId1", "showId2", "showId3" ]
-            // eg. TrendingYesterday: [ "showId4", "showId5", "showId6" ]
-
-            foreach (var (type, showIds) in nonPersonalisedDataSourceTypesAndShowIds)
-            {
-                dataSourceTypeToShowIds.Add(type, showIds);
-            }
-
-            return dataSourceTypeToShowIds;
-        }
-
-        private List<Task<ICollection<Show>>> CreateShowRetrievalTasks(List<string> showIds)
-        {
-            return showIds
+            var tasks = showIds
                 .Select(showId => Task.Run(async () =>
                 {
-                    var show = await videoLibraryService.GetShowMetadataAsync(showId);
-                    return show;
+                    var shows = await videoLibraryService.GetShowMetadataAsync(showId);
+                    return shows;
                 }))
                 .ToList();
+
+            return await Task.WhenAll(tasks);
         }
 
-        private List<Task<(DataSourceType, ICollection<string>)>> CreateShowIdRetrievalTasks(IEnumerable<DataSourceType> nonPersonalisedDataSourceTypes)
+        private async Task<Dictionary<DataSourceType, IList<Show>>> GetDataSourceTypesToShowsMappingAsync(Dictionary<DataSourceType, IList<string>> nonPersonalisedDataSourceTypesAndShowIds)
         {
-            return nonPersonalisedDataSourceTypes
+            var dataSouceTypeToShows = new Dictionary<DataSourceType, IList<Show>>();
+
+            foreach (var (dataSourceType, showIds) in nonPersonalisedDataSourceTypesAndShowIds)
+            {
+                var shows = await GetShowsAsync(showIds);
+                dataSouceTypeToShows[dataSourceType] = shows;
+            }
+
+            return dataSouceTypeToShows;
+        }
+
+        private async Task<Dictionary<DataSourceType, IList<string>>> GetDataSourceTypesToShowIdsMappingAsync(IEnumerable<DataSourceType> dataSourceTypes)
+        {
+            // Run all tasks in parallel to improve loading for the current user.
+            // But consider this will use up threads from the thread pool that could be used to handle other incoming requests.
+            // TODO: consider this tradeoff
+            var tasks = dataSourceTypes
                 .Select(type => Task.Run(async () =>
                 {
-                    var showIds = await dataSourceTypeRetrievers[type].Invoke();
+                    var showIds = await dataSourceTypeRetrieverMappers[type].Invoke();
                     return (type, showIds);
                 }))
                 .ToList();
+
+            var results = await Task.WhenAll(tasks);
+            return results.ToDictionary(result => result.type, result => result.showIds);
         }
 
         private bool IsPersonalisedShelf(DataSourceType datasourceType)

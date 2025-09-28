@@ -12,7 +12,8 @@ namespace StreamFlix.Services.Layout
             var response = await _httpClient.GetAsync("/layout/api/page/home");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<LayoutConfig>(json);
+            var layoutConfig = JsonSerializer.Deserialize<LayoutConfig>(json);
+            return layoutConfig;
         }
     }
 }

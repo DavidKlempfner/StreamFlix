@@ -12,13 +12,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<ILayoutService, LayoutService>();
-builder.Services.AddSingleton<IRecommendationsService, RecommendationsService>();
-builder.Services.AddSingleton<IShelvesService, ShelvesService>();
-builder.Services.AddSingleton<IVideoLibraryService, VideoLibraryService>();
+builder.Services.AddScoped<IShelvesService, ShelvesService>();
 
 // TODO: set up auth for calling APIs
-builder.Services.AddHttpClient<ILayoutService>(client =>
+builder.Services.AddHttpClient<ILayoutService, LayoutService>(client =>
 {
     var layoutServiceBaseUrl = builder.Configuration["LayoutService:BaseUrl"];
     client.BaseAddress = new Uri(layoutServiceBaseUrl);
@@ -26,14 +23,14 @@ builder.Services.AddHttpClient<ILayoutService>(client =>
     client.Timeout = TimeSpan.FromSeconds(1);
 });
 
-builder.Services.AddHttpClient<IRecommendationsService>(client =>
+builder.Services.AddHttpClient<IRecommendationsService, RecommendationsService>(client =>
 {
     var trendingServiceBaseUrl = builder.Configuration["TrendingService:BaseUrl"];
     client.BaseAddress = new Uri(trendingServiceBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(1);
 });
 
-builder.Services.AddHttpClient<IVideoLibraryService>(client =>
+builder.Services.AddHttpClient<IVideoLibraryService, VideoLibraryService>(client =>
 {
     var videoLibraryServiceBaseUrl = builder.Configuration["VideoLibraryService:BaseUrl"];
     client.BaseAddress = new Uri(videoLibraryServiceBaseUrl);
