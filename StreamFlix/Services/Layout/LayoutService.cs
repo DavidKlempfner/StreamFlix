@@ -3,14 +3,9 @@ using StreamFlix.Models.Layout;
 
 namespace StreamFlix.Services.Layout
 {
-    public class LayoutService : ILayoutService
+    public class LayoutService(HttpClient httpClient) : ILayoutService
     {
-        private readonly HttpClient _httpClient;
-
-        public LayoutService(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-        }
+        private readonly HttpClient _httpClient = httpClient;
 
         public async Task<LayoutConfig> GetHomePageLayoutAsync()
         {

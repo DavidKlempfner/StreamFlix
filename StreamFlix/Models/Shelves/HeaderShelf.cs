@@ -13,6 +13,6 @@ namespace StreamFlix.Models.Shelves
 
         // Using BackgroundImageUrl as the property name to be consistent with other properties containing URLs
         [JsonPropertyName("backgroundImage")]
-        public string BackgroundImageUrl { get; set; } = string.Empty;        
+        public string BackgroundImageUrl { get; set; } = string.Empty;
     }
 }

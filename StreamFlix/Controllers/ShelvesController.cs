@@ -27,9 +27,9 @@ namespace StreamFlix.Controllers
     {
 
         [HttpGet]
-        public ICollection<Shelf> GetShelves()
+        public async Task<ICollection<Shelf>> GetShelves()
         {
-            return shelvesService.GetShelves();
+            return await shelvesService.GetShelves();
         }
     }
 }

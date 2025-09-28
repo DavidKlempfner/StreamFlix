@@ -4,6 +4,6 @@ namespace StreamFlix.Services.Shelves
 {
     public interface IShelvesService
     {
-        ICollection<Shelf> GetShelves();
+        Task<ICollection<Shelf>> GetShelves();
     }
 }

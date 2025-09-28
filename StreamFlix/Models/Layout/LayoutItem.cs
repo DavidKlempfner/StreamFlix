@@ -1,12 +1,14 @@
-﻿namespace StreamFlix.Models.Layout
+﻿using StreamFlix.Models.Shelves;
+
+namespace StreamFlix.Models.Layout
 {
     public class LayoutItem
     {
         public string Id { get; set; } = string.Empty;
 
-        public string Type { get; set; } = string.Empty;
+        public ShelfType ShelfType { get; set; }
 
-        public string DatasourceType { get; set; } = string.Empty;
+        public DataSourceType DatasourceType { get; set; }
 
         public string? Title { get; set; }
 
