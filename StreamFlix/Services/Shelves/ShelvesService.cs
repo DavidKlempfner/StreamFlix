@@ -26,6 +26,7 @@ namespace StreamFlix.Services.Shelves
             { DataSourceType.TrendingNow, recommendationsService.GetTrendingNowShowIdsAsync }
         };
 
+        // Hardcoding of mappings can't be avoided, but at least this method provides a neater way of mapping a ShelfType to a mapper method rather than using if statements
         private readonly Dictionary<ShelfType, Func<LayoutItem, IList<Show>, IList<ShelfItem>>> shelfMappers = new()
         {
             { ShelfType.ShowsShelf, (layoutItem, shows) => ShelfItemMapper.MapLayoutItemAndShowsToShowsShelf(layoutItem, shows).Cast<ShelfItem>().ToList() },
@@ -81,7 +82,9 @@ namespace StreamFlix.Services.Shelves
         }
 
         private async Task<List<List<ShelfItem>>> GetNonPersonalisedShelvesFromConfigAsync(LayoutConfig layoutConfig)
-        {            
+        {
+            // TODO: consider calling ToList() to enforce just one enumeration of the IEnumerable.
+            // At the moment it's being enumerated twice (see .Select() below and foreach loop in ConvertToNonPersonalisedShelves)
             var nonPersonalisedShelfLayoutItems = layoutConfig.Layout.Where(item => !IsPersonalisedShelf(item.DataSourceType));
             //eg:
             /*
