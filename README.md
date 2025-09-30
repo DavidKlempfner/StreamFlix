@@ -120,6 +120,17 @@ Add logging for service calls and failures to aid in debugging and production mo
 Validate incoming data from layout and downstream services to avoid runtime errors.
 
 
+**Authentication:**
+
+Use OIDC and AWS Cognito for authentication. The JWT (JWS containing the ID token) can be stored in an HttpOnly cookie when using a web browser, and stored securely and sent in the Authorization header when using a native app.
+Claims and policies can be used together to differentiate between different subscription types, eg. a more expensive subscription might allow a user to access an endpoint that returns more videos.
+
+
+**Compression:**
+
+GZIP can be used to compress large JSON payloads. There is a CPU vs bandwidth tradeoff to consider.
+
+
 
 **Code:**
 Be more consistent with collection types. IList<T> should be used for public methods and List<T> for private methods.
