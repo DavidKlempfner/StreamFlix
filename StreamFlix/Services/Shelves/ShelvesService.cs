@@ -142,6 +142,15 @@ namespace StreamFlix.Services.Shelves
 
         private async Task<IList<Show>> GetShowsAsync(IList<string> showIds)
         {
+            // I used AI to generate this however after looking at it further I think this would have been a better option:
+            /*
+             var tasks = showIds
+                .Select(showId => videoLibraryService.GetShowMetadataAsync(showId))
+                .ToList();
+             */
+            // ToList() enumerates the IEnumerable and will run the GetShowMetadataAsync() calls.
+            // HTTP calls are I/O bound, not CPU bound, so they should use async/await not Task.Run().
+            // The problem with Task.Run() is a new thread is created and the thread just sits there waiting for the HTTP call to finish.
             var tasks = showIds
                 .Select(showId => Task.Run(async () =>
                 {
