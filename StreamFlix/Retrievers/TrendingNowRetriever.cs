@@ -7,11 +7,12 @@ namespace StreamFlix.Retrievers
     {
         private readonly IRecommendationsService _recommendationsService = recommendationsService;
 
+        public bool IsPersonalised => false;
         public DataSourceType SupportedType => DataSourceType.TrendingNow;
 
-        public Task<IList<string>> RetrieveShowIdsAsync()
+        public async Task<IList<string>> RetrieveShowIdsAsync()
         {
-            return _recommendationsService.GetTrendingNowShowIdsAsync();
+            return await _recommendationsService.GetTrendingNowShowIdsAsync();
         }
     }
 }

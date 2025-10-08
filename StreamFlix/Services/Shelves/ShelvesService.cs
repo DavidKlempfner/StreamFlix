@@ -21,8 +21,6 @@ namespace StreamFlix.Services.Shelves
             4. 🚀 Returns complete shelves data for frontend rendering
         */
 
-        private readonly List<DataSourceType> _personalisedDataSourceTypes = [DataSourceType.ContinuePlaying];
-
         public async Task<List<List<ShelfItem>>> GetNonPersonalisedShelves()
         {
             var layoutConfig = await layoutService.GetHomePageLayoutAsync();
@@ -188,7 +186,7 @@ namespace StreamFlix.Services.Shelves
 
         private bool IsPersonalisedShelf(DataSourceType datasourceType)
         {
-            return _personalisedDataSourceTypes.Contains(datasourceType);
+            return dataSourceRetrievers.Single(x => x.SupportedType == datasourceType).IsPersonalised;
         }
     }
 }

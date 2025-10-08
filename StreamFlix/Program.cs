@@ -15,8 +15,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IShelvesService, ShelvesService>();
+
 builder.Services.AddScoped<IDataSourceRetriever, TrendingNowRetriever>();
-//builder.Services.AddScoped<IDataSourceRetriever, ContinuePlayingRetriever>();
+builder.Services.AddScoped<IDataSourceRetriever, ContinuePlayingRetriever>();
+
 builder.Services.AddScoped<IShelfMapper, HeaderShelfMapper>();
 builder.Services.AddScoped<IShelfMapper, ShowsShelfMapper>();
 
