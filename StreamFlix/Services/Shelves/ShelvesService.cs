@@ -5,10 +5,14 @@ using StreamFlix.Services.Layout;
 using StreamFlix.Services.Recommendations;
 using StreamFlix.Services.VideoLibrary;
 using StreamFlix.Mappers;
+using StreamFlix.Retrievers;
 
 namespace StreamFlix.Services.Shelves
 {
-    public class ShelvesService(ILayoutService layoutService, IRecommendationsService recommendationsService, IVideoLibraryService videoLibraryService) : IShelvesService
+    public class ShelvesService(ILayoutService layoutService,
+        IVideoLibraryService videoLibraryService,
+        IEnumerable<IShelfMapper> shelfMappers,
+        IEnumerable<IDataSourceRetriever> dataSourceRetrievers) : IShelvesService
     {
         /*
             1. 📋 Fetches layout configuration from the Layout Service
@@ -18,20 +22,6 @@ namespace StreamFlix.Services.Shelves
         */
 
         private readonly List<DataSourceType> _personalisedDataSourceTypes = [DataSourceType.ContinuePlaying];
-
-        // Different methods can be added here in the future to handle different DataSourceTypes
-        // This is to avoid adding a new if statement in GetShelves() every time a new DataSourceType is added
-        private readonly Dictionary<DataSourceType, Func<Task<IList<string>>>> dataSourceTypeRetrieverMappers = new()
-        {
-            { DataSourceType.TrendingNow, recommendationsService.GetTrendingNowShowIdsAsync }
-        };
-
-        // Hardcoding of mappings can't be avoided, but at least this method provides a neater way of mapping a ShelfType to a mapper method rather than using if statements
-        private readonly Dictionary<ShelfType, Func<LayoutItem, IList<Show>, IList<ShelfItem>>> shelfMappers = new()
-        {
-            { ShelfType.ShowsShelf, (layoutItem, shows) => ShelfItemMapper.MapLayoutItemAndShowsToShowsShelf(layoutItem, shows).Cast<ShelfItem>().ToList() },
-            { ShelfType.HeaderShelf, (layoutItem, shows) => ShelfItemMapper.MapLayoutItemAndShowsToHeaderShelf(layoutItem, shows).Cast<ShelfItem>().ToList() }
-        };
 
         public async Task<List<List<ShelfItem>>> GetNonPersonalisedShelves()
         {
@@ -127,13 +117,15 @@ namespace StreamFlix.Services.Shelves
             return nonPersonalisedShelves;
         }
 
-        private List<List<ShelfItem>> ConvertToNonPersonalisedShelves(IEnumerable<LayoutItem> nonPersonalisedShelfLayoutItems, Dictionary<DataSourceType, IList<Show>> nonPersonalisedDataSourceTypesAndShows)
+        private List<List<ShelfItem>> ConvertToNonPersonalisedShelves(IEnumerable<LayoutItem> nonPersonalisedShelfLayoutItems,
+            Dictionary<DataSourceType, IList<Show>> nonPersonalisedDataSourceTypesAndShows)
         {
             List<List<ShelfItem>> nonPersonalisedShelves = new();
             foreach (var shelfLayoutItem in nonPersonalisedShelfLayoutItems)
             {
                 var showsForShelf = nonPersonalisedDataSourceTypesAndShows[shelfLayoutItem.DataSourceType];
-                var shelfItems = shelfMappers[shelfLayoutItem.Type].Invoke(shelfLayoutItem, showsForShelf);
+                var shelfMapper = shelfMappers.Single(x => x.SupportedType == shelfLayoutItem.Type);
+                var shelfItems = shelfMapper.MapToShelfItems(shelfLayoutItem, showsForShelf);
                 nonPersonalisedShelves.Add(shelfItems.ToList());
             }
 
@@ -184,7 +176,8 @@ namespace StreamFlix.Services.Shelves
             var tasks = dataSourceTypes
                 .Select(type => Task.Run(async () =>
                 {
-                    var showIds = await dataSourceTypeRetrieverMappers[type].Invoke();
+                    var dataSourceTypeRetrieverMapper = dataSourceRetrievers.Single(x => x.SupportedType == type);
+                    var showIds = await dataSourceTypeRetrieverMapper.RetrieveShowIdsAsync();
                     return (type, showIds);
                 }))
                 .ToList();

@@ -1,3 +1,5 @@
+using StreamFlix.Mappers;
+using StreamFlix.Retrievers;
 using StreamFlix.Services.Layout;
 using StreamFlix.Services.Recommendations;
 using StreamFlix.Services.Shelves;
@@ -13,6 +15,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IShelvesService, ShelvesService>();
+builder.Services.AddScoped<IDataSourceRetriever, TrendingNowRetriever>();
+//builder.Services.AddScoped<IDataSourceRetriever, ContinuePlayingRetriever>();
+builder.Services.AddScoped<IShelfMapper, HeaderShelfMapper>();
+builder.Services.AddScoped<IShelfMapper, ShowsShelfMapper>();
 
 // TODO: set up auth for calling APIs
 builder.Services.AddHttpClient<ILayoutService, LayoutService>(client =>
